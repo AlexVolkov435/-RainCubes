@@ -42,7 +42,10 @@ public class Spawner : MonoBehaviour
 
     private int GenerateRandom()
     {
-        return Random.Range(-3, 3);
+        int startRandom = 2;
+        int finishRandom = 6;
+
+        return Random.Range(startRandom, finishRandom);
     }
 
     private void SetSpeed()
