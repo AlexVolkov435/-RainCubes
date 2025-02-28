@@ -1,44 +1,54 @@
 using UnityEngine;
-using UnityEngine.Pool;
 
 public class Spawner : MonoBehaviour
 {
-    [SerializeField] private GameObject _prefab;
-    [SerializeField] private Transform _startSpawnObject;
-    [SerializeField] private float _repeatRate;
-    [SerializeField] private int _poolCapacity = 5;
-    [SerializeField] private int _poolMaxSize = 5;
+    [SerializeField] private int _pollCount = 3;
+    [SerializeField] private bool _autoExpand = false;
+    [SerializeField] private Cube _cubePrefab;
 
-    private ObjectPool<GameObject> _pool;
-    private Transform _transformObject;
+    private PollMono<Cube> _poll;
+    private Rigidbody _rb;
+
+    private void OnEnable()
+    {
+        Cube.ObjectDisabled += CreateCube;
+    }
+
+    private void OnDisable()
+    {
+        Cube.ObjectDisabled -= CreateCube;
+    }
 
     private void Awake()
     {
-        _transformObject = _startSpawnObject;
-        _pool = new ObjectPool<GameObject>(
-        createFunc: () => Instantiate(_prefab),
-        actionOnGet: (obj) => ActionOnGet(obj),
-        actionOnRelease: (obj) => obj.SetActive(false),
-        actionOnDestroy: (obj) => Destroy(obj),
-        collectionCheck: true,
-        defaultCapacity: _poolCapacity,
-        maxSize: _poolMaxSize);
-    }
-
-    private void ActionOnGet(GameObject obj)
-    {
-        obj.transform.position = new Vector3(_transformObject.transform.position.x + Random.Range(0, 2), _transformObject.transform.position.y + Random.Range(3, 3));
-        obj.GetComponent<Rigidbody>().velocity = Vector3.zero;
-        obj.SetActive(true);
+        _rb = _cubePrefab.GetComponent<Rigidbody>();
+        _poll = new PollMono<Cube>(_cubePrefab, _pollCount, transform);
+        _poll._autoExpand = _autoExpand;
     }
 
     private void Start()
     {
-        InvokeRepeating(nameof(GetSphere), 0.0f, _repeatRate);
+        CreateCube();
     }
 
-    private void GetSphere()
+    public void CreateCube()
     {
-        _pool.Get();
+        var positon = new Vector3(transform.position.x + GenerateRandom(), transform.position.y + GenerateRandom(), transform.position.z + GenerateRandom());
+        var cube = _poll.GetFreeElement();
+        cube.transform.position = positon;
+
+        SetSpeed();
+    }
+
+    private int GenerateRandom()
+    {
+        return Random.Range(-3, 3);
+    }
+
+    private void SetSpeed()
+    {
+        var speedCube = _rb.velocity;
+        speedCube.y = 0.0f;
+        _rb.velocity = speedCube;
     }
 }
